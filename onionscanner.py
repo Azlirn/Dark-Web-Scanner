@@ -56,8 +56,8 @@ def run_onionscan(onion):
     print "[*] Onionscanning %s" % onion
 
     # fire up onionscan
-    process = subprocess.Popen(["onionscan", "--jsonReport", "--simpleReport=false", onion], stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    process = subprocess.Popen(["onionscan", "--webport=0", "--jsonReport", "--simpleReport=false", onion],
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # start the timer and let it run 5 minutes
     process_timer = Timer(300, handle_timeout, args=[process, onion])
@@ -136,14 +136,14 @@ def process_results(onion, json_response):
     scan_result = ur"%s" % json_response.decode("utf8")
     scan_result = json.loads(scan_result)
 
-    if scan_result['linkedSites'] is not None:
-        add_new_onions(scan_result['linkedSites'])
+    if scan_result['identifierReport']['linkedOnions'] is not None:
+        add_new_onions(scan_result['identifierReport']['linkedOnions'])
 
-    if scan_result['relatedOnionDomains'] is not None:
-        add_new_onions(scan_result['relatedOnionDomains'])
+    if scan_result['identifierReport']['relatedOnionDomains'] is not None:
+        add_new_onions(scan_result['identifierReport']['relatedOnionDomains'])
 
-    if scan_result['relatedOnionServices'] is not None:
-        add_new_onions(scan_result['relatedOnionServices'])
+    if scan_result['identifierReport']['relatedOnionServices'] is not None:
+        add_new_onions(scan_result['identifierReport']['relatedOnionServices'])
 
     return
 
@@ -203,4 +203,4 @@ while count < len(onions):
         if len(result):
             process_results(onion, result)
 
-    count += 1
+            count += 1
