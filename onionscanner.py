@@ -11,21 +11,21 @@ import subprocess
 import sys
 import time
 
-onions         = []
+onions = []
 session_onions = []
 
-identity_lock  = Event()
+identity_lock = Event()
 identity_lock.set()
+
 
 #
 # Grab the list of onions from our master list file.
 #
 def get_onion_list():
-
     # open the master list
     if os.path.exists("onion_master_list.txt"):
 
-        with open("onion_master_list.txt","rb") as fd:
+        with open("onion_master_list.txt", "rb") as fd:
 
             stored_onions = fd.read().splitlines()
     else:
@@ -35,30 +35,32 @@ def get_onion_list():
     print "[*] Total onions for scanning: %d" % len(stored_onions)
 
     return stored_onions
+
+
 #
 # Stores an onion in the master list of onions.
 #
 def store_onion(onion):
-
     print "[++] Storing %s in master list." % onion
 
-    with codecs.open("onion_master_list.txt","ab",encoding="utf8") as fd:
+    with codecs.open("onion_master_list.txt", "ab", encoding="utf8") as fd:
         fd.write("%s\n" % onion)
 
     return
+
 
 #
 # Runs onion scan as a child process.
 #
 def run_onionscan(onion):
-
     print "[*] Onionscanning %s" % onion
 
     # fire up onionscan
-    process = subprocess.Popen(["onionscan","--jsonReport","--simpleReport=false",onion],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    process = subprocess.Popen(["onionscan", "--jsonReport", "--simpleReport=false", onion], stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     # start the timer and let it run 5 minutes
-    process_timer = Timer(300,handle_timeout,args=[process,onion])
+    process_timer = Timer(300, handle_timeout, args=[process, onion])
     process_timer.start()
 
     # wait for the onion scan results
@@ -73,11 +75,11 @@ def run_onionscan(onion):
 
     return None
 
+
 #
 # Handle a timeout from the onionscan process.
 #
-def handle_timeout(process,onion):
-
+def handle_timeout(process, onion):
     global session_onions
     global identity_lock
 
@@ -118,7 +120,7 @@ def handle_timeout(process,onion):
 #
 # Processes the JSON result from onionscan.
 #
-def process_results(onion,json_response):
+def process_results(onion, json_response):
     global onions
     global session_onions
 
@@ -127,7 +129,7 @@ def process_results(onion,json_response):
         os.mkdir("onionscan_results")
 
     # write out the JSON results of the scan
-    with open("%s/%s.json" % ("onionscan_results",onion), "wb") as fd:
+    with open("%s/%s.json" % ("onionscan_results", onion), "wb") as fd:
         fd.write(json_response)
 
     # look for additional .onion domains to add to our scan list
@@ -143,21 +145,19 @@ def process_results(onion,json_response):
     if scan_result['relatedOnionServices'] is not None:
         add_new_onions(scan_result['relatedOnionServices'])
 
-
     return
+
 
 #
 # Handle new onions.
 #
 def add_new_onions(new_onion_list):
-
     global onions
     global session_onions
 
     for linked_onion in new_onion_list:
 
         if linked_onion not in onions and linked_onion.endswith(".onion"):
-
             print "[++] Discovered new .onion => %s" % linked_onion
 
             onions.append(linked_onion)
@@ -166,6 +166,7 @@ def add_new_onions(new_onion_list):
             store_onion(linked_onion)
 
     return
+
 
 # get a list of onions to process
 onions = get_onion_list()
@@ -183,12 +184,11 @@ while count < len(onions):
     identity_lock.wait()
 
     # grab a new onion to scan
-    print "[*] Running %d of %d." % (count,len(onions))
-    onion  = session_onions.pop()
+    print "[*] Running %d of %d." % (count, len(onions))
+    onion = session_onions.pop()
 
     # test to see if we have already retrieved results for this onion
     if os.path.exists("onionscan_results/%s.json" % onion):
-
         print "[!] Already retrieved %s. Skipping." % onion
         count += 1
 
@@ -201,6 +201,6 @@ while count < len(onions):
     if result is not None:
 
         if len(result):
-            process_results(onion,result)
+            process_results(onion, result)
 
     count += 1
